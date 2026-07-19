@@ -1,0 +1,515 @@
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+<meta charset="UTF-8">  
+<title>Weather Station</title>  
+<link rel="preconnect" href="https://fonts.googleapis.com">  
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">  
+<style>  
+  :root{  
+    --panel: #16211f;  
+    --panel-2: #1d2c29;  
+    --paper: #eee6d3;  
+    --paper-dim: #c9bfa4;  
+    --brass: #c79a4b;  
+    --brass-bright: #e6b85f;  
+    --needle-red: #b5493f;  
+    --ink: #0e1615;  
+    --line: rgba(238,230,211,0.14);  
+    --line-strong: rgba(238,230,211,0.28);  
+    --good: #7ea87a;  
+  }  
+  *{box-sizing:border-box;}  
+  html,body{margin:0;padding:0;}  
+  body{  
+    background:  
+      radial-gradient(circle at 15% 10%, rgba(230,184,95,0.05), transparent 45%),  
+      var(--panel);  
+    color:var(--paper);  
+    font-family:'JetBrains Mono', monospace;  
+    min-height:100vh;  
+    padding:28px 16px 60px;  
+    display:flex;  
+    justify-content:center;  
+  }  
+  .frame{  
+    width:100%;  
+    max-width:880px;  
+  }  /* ---- header / eyebrow ---- */
+.eyebrow-row{
+display:flex;
+align-items:baseline;
+justify-content:space-between;
+border-bottom:1px solid var(--line-strong);
+padding-bottom:14px;
+margin-bottom:22px;
+flex-wrap:wrap;
+gap:8px;
+}
+.eyebrow{
+font-size:11px;
+letter-spacing:0.28em;
+text-transform:uppercase;
+color:var(--brass);
+}
+.clock{
+font-size:11px;
+letter-spacing:0.1em;
+color:var(--paper-dim);
+}
+
+/* ---- search ---- */
+.search-panel{
+background:var(--panel-2);
+border:1px solid var(--line);
+border-radius:4px;
+padding:14px;
+display:flex;
+gap:10px;
+margin-bottom:26px;
+position:relative;
+}
+.search-panel input{
+flex:1;
+background:transparent;
+border:none;
+outline:none;
+color:var(--paper);
+font-family:'JetBrains Mono', monospace;
+font-size:14px;
+letter-spacing:0.02em;
+padding:6px 4px;
+}
+.search-panel input::placeholder{color:var(--paper-dim);}
+.search-panel button{
+background:var(--brass);
+color:var(--ink);
+border:none;
+border-radius:3px;
+padding:0 20px;
+font-family:'JetBrains Mono', monospace;
+font-weight:700;
+font-size:11px;
+letter-spacing:0.14em;
+text-transform:uppercase;
+cursor:pointer;
+transition:background .15s ease;
+}
+.search-panel button:hover{background:var(--brass-bright);}
+.search-panel button:disabled{background:var(--paper-dim); cursor:progress;}
+
+.suggestions{
+position:absolute;
+top:calc(100% + 6px);
+left:0; right:0;
+background:var(--panel-2);
+border:1px solid var(--line-strong);
+border-radius:4px;
+z-index:20;
+overflow:hidden;
+display:none;
+}
+.suggestions.open{display:block;}
+.suggestions button{
+display:block;
+width:100%;
+text-align:left;
+background:none;
+border:none;
+border-bottom:1px solid var(--line);
+color:var(--paper);
+font-family:'JetBrains Mono', monospace;
+font-size:12.5px;
+padding:10px 14px;
+cursor:pointer;
+}
+.suggestions button:last-child{border-bottom:none;}
+.suggestions button:hover{background:rgba(199,154,75,0.14); color:var(--brass-bright);}
+.suggestions button span{color:var(--paper-dim); font-size:11px;}
+
+/* ---- states ---- */
+.state-msg{
+text-align:center;
+padding:60px 20px;
+color:var(--paper-dim);
+font-size:13px;
+letter-spacing:0.05em;
+}
+.state-msg.error{color:var(--needle-red);}
+.dot-pulse{
+display:inline-block;
+width:8px;height:8px;
+border-radius:50%;
+background:var(--brass);
+margin-right:8px;
+animation:pulse 1.1s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:0.25;}50%{opacity:1;}}
+
+/* ---- hero ---- */
+.hero{
+display:grid;
+grid-template-columns:1fr auto;
+gap:20px;
+align-items:center;
+padding:28px 26px;
+background:linear-gradient(160deg, var(--panel-2), var(--panel));
+border:1px solid var(--line);
+border-radius:6px;
+margin-bottom:18px;
+}
+.hero-place{
+font-family:'Fraunces', serif;
+font-size:clamp(26px,4vw,38px);
+font-weight:500;
+color:var(--paper);
+line-height:1.05;
+}
+.hero-place .country{
+font-family:'JetBrains Mono', monospace;
+font-size:12px;
+color:var(--paper-dim);
+letter-spacing:0.08em;
+display:block;
+margin-top:6px;
+font-weight:400;
+}
+.hero-condition{
+margin-top:14px;
+font-size:13px;
+color:var(--brass-bright);
+letter-spacing:0.04em;
+}
+.hero-temp-wrap{
+text-align:right;
+}
+.hero-temp{
+font-size:clamp(52px,8vw,84px);
+font-weight:700;
+line-height:1;
+color:var(--paper);
+font-variant-numeric:tabular-nums;
+}
+.hero-temp sup{
+font-size:0.35em;
+color:var(--brass);
+font-weight:500;
+}
+.hero-feels{
+font-size:11px;
+color:var(--paper-dim);
+letter-spacing:0.06em;
+margin-top:6px;
+}
+
+/* ---- metrics grid ---- */
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit, minmax(180px,1fr));
+gap:14px;
+margin-bottom:18px;
+}
+.card{
+background:var(--panel-2);
+border:1px solid var(--line);
+border-radius:6px;
+padding:16px 16px 14px;
+position:relative;
+overflow:hidden;
+}
+.card::before{
+content:'';
+position:absolute;
+top:0;left:0;right:0;height:2px;
+background:linear-gradient(90deg, transparent, var(--brass), transparent);
+opacity:0.5;
+}
+.card-label{
+font-size:10px;
+letter-spacing:0.16em;
+text-transform:uppercase;
+color:var(--paper-dim);
+margin-bottom:10px;
+}
+.card-value{
+font-size:26px;
+font-weight:600;
+color:var(--paper);
+font-variant-numeric:tabular-nums;
+}
+.card-unit{
+font-size:12px;
+color:var(--brass);
+margin-left:3px;
+}
+.card-sub{
+font-size:10.5px;
+color:var(--paper-dim);
+margin-top:6px;
+letter-spacing:0.03em;
+}
+
+/* ---- compass (signature element) ---- */
+.compass-card{
+display:flex;
+align-items:center;
+gap:14px;
+}
+.compass-card .text{flex:1;}
+.compass{
+width:64px;height:64px;
+flex-shrink:0;
+}
+.needle{
+transform-origin:50% 50%;
+transition:transform 0.9s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ---- log / footer ---- */
+.log{
+background:var(--ink);
+border:1px solid var(--line);
+border-radius:6px;
+padding:16px 18px;
+font-size:11.5px;
+color:var(--good);
+letter-spacing:0.02em;
+line-height:1.7;
+}
+.log .tag{color:var(--brass); margin-right:8px;}
+footer{
+text-align:center;
+margin-top:22px;
+font-size:10.5px;
+color:var(--paper-dim);
+letter-spacing:0.06em;
+}
+footer a{color:var(--brass);}
+
+@media (max-width:520px){
+.hero{grid-template-columns:1fr; text-align:left;}
+.hero-temp-wrap{text-align:left;}
+}
+
+:focus-visible{outline:2px solid var(--brass-bright); outline-offset:2px;}
+</style>
+
+</head>  
+<body>  
+<div class="frame">    <div class="eyebrow-row">  
+    <div class="eyebrow">Weather Station &mdash; Live Readout</div>  
+    <div class="clock" id="clock"></div>  
+  </div>    <div class="search-panel">  
+    <input id="cityInput" type="text" placeholder="Enter a city name and press search&hellip;" autocomplete="off" />  
+    <button id="searchBtn">Search</button>  
+    <div class="suggestions" id="suggestions"></div>  
+  </div>    <div id="content">  
+    <div class="state-msg"><span class="dot-pulse"></span>Awaiting a city name to begin the reading.</div>  
+  </div>    <footer>Data via <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> &middot; no API key required &middot; readings refresh on each search</footer>  
+</div>  <script>  
+const cityInput = document.getElementById('cityInput');  
+const searchBtn = document.getElementById('searchBtn');  
+const suggestionsEl = document.getElementById('suggestions');  
+const contentEl = document.getElementById('content');  
+const clockEl = document.getElementById('clock');  
+  
+const WMO = {  
+  0:['Clear sky','☀'], 1:['Mainly clear','🌤'], 2:['Partly cloudy','⛅'], 3:['Overcast','☁'],  
+  45:['Fog','🌫'], 48:['Depositing rime fog','🌫'],  
+  51:['Light drizzle','🌦'], 53:['Moderate drizzle','🌦'], 55:['Dense drizzle','🌧'],  
+  56:['Light freezing drizzle','🌧'], 57:['Dense freezing drizzle','🌧'],  
+  61:['Slight rain','🌧'], 63:['Moderate rain','🌧'], 65:['Heavy rain','🌧'],  
+  66:['Light freezing rain','🌧'], 67:['Heavy freezing rain','🌧'],  
+  71:['Slight snow','🌨'], 73:['Moderate snow','🌨'], 75:['Heavy snow','❄'],  
+  77:['Snow grains','❄'],  
+  80:['Slight rain showers','🌦'], 81:['Moderate rain showers','🌧'], 82:['Violent rain showers','⛈'],  
+  85:['Slight snow showers','🌨'], 86:['Heavy snow showers','🌨'],  
+  95:['Thunderstorm','⛈'], 96:['Thunderstorm, slight hail','⛈'], 99:['Thunderstorm, heavy hail','⛈']  
+};  
+  
+function tick(){  
+  const now = new Date();  
+  clockEl.textContent = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});  
+}  
+tick();  
+setInterval(tick, 1000);  
+  
+function windDirLabel(deg){  
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];  
+  return dirs[Math.round(deg / 22.5) % 16];  
+}  
+  
+function renderLoading(){  
+  contentEl.innerHTML = `<div class="state-msg"><span class="dot-pulse"></span>Taking the reading&hellip;</div>`;  
+}  
+  
+function renderError(message){  
+  contentEl.innerHTML = `<div class="state-msg error">&#9888; ${message}</div>`;  
+}  
+  
+function renderEmpty(city){  
+  contentEl.innerHTML = `<div class="state-msg">No station found for &ldquo;${city}&rdquo;. Check the spelling, or try a nearby larger city.</div>`;  
+}  
+  
+function renderWeather(place, current){  
+  const [condText, condIcon] = WMO[current.weather_code] || ['Unknown', '?'];  
+  const isDay = current.is_day === 1;  
+  const dirLabel = windDirLabel(current.wind_direction_10m);  
+  const now = new Date();  
+  const timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});  
+  
+  contentEl.innerHTML = `  
+    <div class="hero">  
+      <div>  
+        <div class="hero-place">${place.name}<span class="country">${[place.admin1, place.country].filter(Boolean).join(', ')} &middot; ${place.latitude.toFixed(2)}&deg;, ${place.longitude.toFixed(2)}&deg;</span></div>  
+        <div class="hero-condition">${condIcon} ${condText} &middot; ${isDay ? 'Daytime' : 'Night'}</div>  
+      </div>  
+      <div class="hero-temp-wrap">  
+        <div class="hero-temp">${Math.round(current.temperature_2m)}<sup>&deg;C</sup></div>  
+        <div class="hero-feels">Feels like ${Math.round(current.apparent_temperature)}&deg;C</div>  
+      </div>  
+    </div>  
+  
+    <div class="grid">  
+      <div class="card">  
+        <div class="card-label">Humidity</div>  
+        <div class="card-value">${current.relative_humidity_2m}<span class="card-unit">%</span></div>  
+        <div class="card-sub">Relative humidity at 2m</div>  
+      </div>  
+  
+      <div class="card compass-card">  
+        <div class="text">  
+          <div class="card-label">Wind</div>  
+          <div class="card-value">${current.wind_speed_10m}<span class="card-unit">km/h</span></div>  
+          <div class="card-sub">From ${dirLabel} (${Math.round(current.wind_direction_10m)}&deg;)</div>  
+        </div>  
+        <svg class="compass" viewBox="0 0 100 100">  
+          <circle cx="50" cy="50" r="46" fill="none" stroke="var(--line-strong)" stroke-width="1.5"/>  
+          <circle cx="50" cy="50" r="38" fill="none" stroke="var(--line)" stroke-width="1"/>  
+          <text x="50" y="14" text-anchor="middle" font-size="9" fill="var(--paper-dim)" font-family="JetBrains Mono">N</text>  
+          <text x="50" y="93" text-anchor="middle" font-size="9" fill="var(--paper-dim)" font-family="JetBrains Mono">S</text>  
+          <text x="10" y="53" text-anchor="middle" font-size="9" fill="var(--paper-dim)" font-family="JetBrains Mono">W</text>  
+          <text x="90" y="53" text-anchor="middle" font-size="9" fill="var(--paper-dim)" font-family="JetBrains Mono">E</text>  
+          <g class="needle" style="transform: rotate(${current.wind_direction_10m}deg)">  
+            <line x1="50" y1="50" x2="50" y2="16" stroke="var(--needle-red)" stroke-width="3" stroke-linecap="round"/>  
+            <line x1="50" y1="50" x2="50" y2="76" stroke="var(--brass)" stroke-width="3" stroke-linecap="round"/>  
+            <circle cx="50" cy="50" r="4" fill="var(--paper)"/>  
+          </g>  
+        </svg>  
+      </div>  
+  
+      <div class="card">  
+        <div class="card-label">Pressure</div>  
+        <div class="card-value">${Math.round(current.surface_pressure)}<span class="card-unit">hPa</span></div>  
+        <div class="card-sub">Surface pressure</div>  
+      </div>  
+  
+      <div class="card">  
+        <div class="card-label">Precipitation</div>  
+        <div class="card-value">${current.precipitation}<span class="card-unit">mm</span></div>  
+        <div class="card-sub">Last hour</div>  
+      </div>  
+    </div>  
+  
+    <div class="log">  
+      <div><span class="tag">LOG</span>Station lock acquired for ${place.name} at ${timeStr}.</div>  
+      <div><span class="tag">LOG</span>Condition logged: ${condText.toLowerCase()}, ${Math.round(current.temperature_2m)}&deg;C, wind ${current.wind_speed_10m} km/h from ${dirLabel}.</div>  
+    </div>  
+  `;  
+}  
+  
+// --- API calls ---  
+  
+async function geocodeCity(city){  
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=en&format=json`;  
+  const res = await fetch(url);  
+  if(!res.ok){  
+    throw new Error(`Geocoding service responded with status ${res.status}.`);  
+  }  
+  const data = await res.json();  
+  return data.results || [];  
+}  
+  
+async function fetchCurrentWeather(lat, lon){  
+  const params = new URLSearchParams({  
+    latitude: lat,  
+    longitude: lon,  
+    current: 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure',  
+    timezone: 'auto'  
+  });  
+  const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;  
+  const res = await fetch(url);  
+  if(!res.ok){  
+    throw new Error(`Forecast service responded with status ${res.status}.`);  
+  }  
+  const data = await res.json();  
+  if(!data.current){  
+    throw new Error('Forecast response did not include current conditions.');  
+  }  
+  return data.current;  
+}  
+  
+async function loadWeatherForPlace(place){  
+  renderLoading();  
+  try{  
+    const current = await fetchCurrentWeather(place.latitude, place.longitude);  
+    renderWeather(place, current);  
+  }catch(err){  
+    renderError(`Could not load live conditions. ${err.message || 'The network request failed.'}`);  
+  }  
+}  
+  
+async function runSearch(){  
+  const city = cityInput.value.trim();  
+  suggestionsEl.classList.remove('open');  
+  if(!city){  
+    renderError('Enter a city name first.');  
+    return;  
+  }  
+  renderLoading();  
+  searchBtn.disabled = true;  
+  searchBtn.textContent = '···';  
+  try{  
+    const results = await geocodeCity(city);  
+    if(results.length === 0){  
+      renderEmpty(city);  
+      return;  
+    }  
+    if(results.length === 1){  
+      await loadWeatherForPlace(results[0]);  
+      return;  
+    }  
+    // multiple matches: let the user disambiguate  
+    contentEl.innerHTML = `<div class="state-msg">Multiple stations match &ldquo;${city}&rdquo;. Pick one from the dropdown above.</div>`;  
+    suggestionsEl.innerHTML = results.map((r,i) =>  
+      `<button type="button" data-idx="${i}">${r.name} <span>${[r.admin1, r.country].filter(Boolean).join(', ')}</span></button>`  
+    ).join('');  
+    suggestionsEl.classList.add('open');  
+    suggestionsEl.querySelectorAll('button').forEach(btn=>{  
+      btn.addEventListener('click', () => {  
+        loadWeatherForPlace(results[parseInt(btn.dataset.idx,10)]);  
+        suggestionsEl.classList.remove('open');  
+      });  
+    });  
+  }catch(err){  
+    renderError(`Network request failed. ${err.message || 'Please check your connection and try again.'}`);  
+  }finally{  
+    searchBtn.disabled = false;  
+    searchBtn.textContent = 'Search';  
+  }  
+}  
+  
+searchBtn.addEventListener('click', runSearch);  
+cityInput.addEventListener('keydown', (e) => {  
+  if(e.key === 'Enter') runSearch();  
+});  
+document.addEventListener('click', (e) => {  
+  if(!suggestionsEl.contains(e.target) && e.target !== cityInput){  
+    suggestionsEl.classList.remove('open');  
+  }  
+});  
+  
+// initial demo city  
+cityInput.value = 'Warangal';  
+runSearch();  
+</script>  </body>  
+</html>
